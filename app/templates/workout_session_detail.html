@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+    <div class="content-section">
+        <h2>Workout on {{ session.date }}</h2>
+        <hr>
+        <h3>Add a Set</h3>
+        <form method="POST">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" class="btn btn-primary">Add Set</button>
+        </form>
+        <hr>
+        <h3>Workout Sets</h3>
+        <ul class="list-group">
+            {% for set in session.sets.all %}
+                <li class="list-group-item">{{ set }}</li>
+            {% empty %}
+                <li class="list-group-item">No sets logged for this session yet.</li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endblock content %}

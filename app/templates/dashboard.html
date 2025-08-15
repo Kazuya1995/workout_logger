@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+    <h2>Welcome to your dashboard, {{ user.username }}!</h2>
+    <a href="{% url 'add_workout_session' %}" class="btn btn-primary mb-3">Log New Workout</a>
+    <a href="{% url 'add_custom_exercise' %}" class="btn btn-secondary mb-3">Add Custom Exercise</a>
+    <hr>
+    <h3>Your Workout History</h3>
+    <ul class="list-group">
+        {% for session in sessions %}
+            <a href="{% url 'workout_session_detail' session.id %}" class="list-group-item list-group-item-action">
+                Workout on {{ session.date }}
+            </a>
+        {% empty %}
+            <li class="list-group-item">You have no workout sessions logged yet.</li>
+        {% endfor %}
+    </ul>
+{% endblock content %}
