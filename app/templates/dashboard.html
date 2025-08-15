@@ -1,6 +1,26 @@
 {% extends "base.html" %}
 {% block content %}
-    <h2>Welcome to your dashboard, {{ user.username }}!</h2>
+    <style>
+        .calendar td {
+            width: 14%;
+            height: 100px;
+            vertical-align: top;
+            border: 1px solid #ddd;
+            padding: 5px;
+            background-color: #fff;
+        }
+        .calendar .day {
+            font-weight: bold;
+        }
+    </style>
+
+    <h3>Training Calendar</h3>
+    <div id="calendar-container">
+        {{ calendar|safe }}
+    </div>
+
+    <hr>
+
     <a href="{% url 'add_workout_session' %}" class="btn btn-primary mb-3">Log New Workout</a>
     <a href="{% url 'add_custom_exercise' %}" class="btn btn-secondary mb-3">Add Custom Exercise</a>
     <hr>
@@ -14,4 +34,25 @@
             <li class="list-group-item">You have no workout sessions logged yet.</li>
         {% endfor %}
     </ul>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const workoutsByDay = {{ workouts_by_day|safe }};
+            const colorMap = {{ color_map|safe }};
+            const calendarTds = document.querySelectorAll('.calendar td');
+
+            calendarTds.forEach(td => {
+                const day = parseInt(td.innerText);
+                if (!isNaN(day) && workoutsByDay[day]) {
+                    const categories = workoutsByDay[day];
+                    if (categories.length > 1) {
+                        const colors = categories.map(cat => colorMap[cat] || '#FFFFFF').join(', ');
+                        td.style.background = `linear-gradient(to bottom right, ${colors})`;
+                    } else if (categories.length === 1) {
+                        td.style.backgroundColor = colorMap[categories[0]] || '#FFFFFF';
+                    }
+                }
+            });
+        });
+    </script>
 {% endblock content %}

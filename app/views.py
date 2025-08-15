@@ -1,3 +1,5 @@
+import calendar
+from datetime import datetime
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
@@ -20,8 +22,55 @@ def register(request):
 
 @login_required
 def dashboard(request):
-    sessions = WorkoutSession.objects.filter(user=request.user).order_by('-date')
-    return render(request, 'dashboard.html', {'sessions': sessions})
+    # Calendar logic
+    now = datetime.now()
+    year = now.year
+    month = now.month
+
+    cal = calendar.HTMLCalendar().formatmonth(year, month).replace(
+        '<table', '<table class="table table-bordered"'
+    )
+
+    # Get workout data for the current month
+    sessions = WorkoutSession.objects.filter(
+        user=request.user,
+        date__year=year,
+        date__month=month
+    ).prefetch_related('sets__exercise')
+
+    # Create a dictionary to hold workout data for each day
+    workouts_by_day = {}
+    for session in sessions:
+        day = session.date.day
+        if day not in workouts_by_day:
+            workouts_by_day[day] = []
+
+        for s in session.sets.all():
+            workouts_by_day[day].append(s.exercise.category)
+
+    # Remove duplicates
+    for day, categories in workouts_by_day.items():
+        workouts_by_day[day] = list(set(categories))
+
+    # Color mapping for muscle groups
+    color_map = {
+        'Legs': '#FF0000',      # Red
+        'Chest': '#0000FF',     # Blue
+        'Arms': '#FFA500',      # Orange
+        'Back': '#008000',      # Green
+        'Shoulders': '#800080', # Purple
+        'Abs': '#FFC0CB',       # Pink
+        'Cardio': '#FFFF00',    # Yellow
+    }
+
+    context = {
+        'calendar': cal,
+        'workouts_by_day': workouts_by_day,
+        'color_map': color_map,
+        'sessions': sessions.order_by('-date'),
+    }
+
+    return render(request, 'dashboard.html', context)
 
 @login_required
 def add_workout_session(request):

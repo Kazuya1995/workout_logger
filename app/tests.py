@@ -33,7 +33,7 @@ class WorkoutAppTestCase(TestCase):
 
         response = self.client.post(reverse('register'), {
             'username': 'newuser',
-            'password': 'newpassword123',
+            'password1': 'newpassword123',
             'password2': 'newpassword123',
         })
         user_exists = User.objects.filter(username='newuser').exists()
@@ -55,7 +55,14 @@ class WorkoutAppTestCase(TestCase):
         self.client.login(username='testuser', password='password123')
         response = self.client.get(reverse('dashboard'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, f'href="{reverse("workout_session_detail", args=[self.session.id])}"')
+        self.assertIn('calendar', response.context)
+        self.assertIn('workouts_by_day', response.context)
+        self.assertIn('color_map', response.context)
+
+        today = datetime.date.today()
+        day = today.day
+        self.assertIn(day, response.context['workouts_by_day'])
+        self.assertEqual(response.context['workouts_by_day'][day], ['Chest'])
 
     def test_add_workout_session(self):
         self.client.login(username='testuser', password='password123')
