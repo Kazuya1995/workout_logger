@@ -1,5 +1,6 @@
 import calendar
-from datetime import datetime
+from datetime import datetime, date
+from dateutil.relativedelta import relativedelta
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
@@ -21,15 +22,20 @@ def register(request):
     return render(request, 'registration/register.html', {'form': form})
 
 @login_required
-def dashboard(request):
+def dashboard(request, year=None, month=None):
     # Calendar logic
-    now = datetime.now()
-    year = now.year
-    month = now.month
+    if year is None or month is None:
+        now = datetime.now()
+        year = now.year
+        month = now.month
 
     cal = calendar.HTMLCalendar().formatmonth(year, month).replace(
         '<table', '<table class="table table-bordered"'
     )
+
+    current_month = datetime(year, month, 1)
+    prev_month = current_month - relativedelta(months=1)
+    next_month = current_month + relativedelta(months=1)
 
     # Get workout data for the current month
     sessions = WorkoutSession.objects.filter(
@@ -38,36 +44,16 @@ def dashboard(request):
         date__month=month
     ).prefetch_related('sets__exercise')
 
-    # Create a dictionary to hold workout data for each day
-    workouts_by_day = {}
-    for session in sessions:
-        day = session.date.day
-        if day not in workouts_by_day:
-            workouts_by_day[day] = []
-
-        for s in session.sets.all():
-            workouts_by_day[day].append(s.exercise.category)
-
-    # Remove duplicates
-    for day, categories in workouts_by_day.items():
-        workouts_by_day[day] = list(set(categories))
-
-    # Color mapping for muscle groups
-    color_map = {
-        'Legs': '#FF0000',      # Red
-        'Chest': '#0000FF',     # Blue
-        'Arms': '#FFA500',      # Orange
-        'Back': '#008000',      # Green
-        'Shoulders': '#800080', # Purple
-        'Abs': '#FFC0CB',       # Pink
-        'Cardio': '#FFFF00',    # Yellow
-    }
+    # Get a list of days with workouts
+    workout_days = sessions.values_list('date__day', flat=True).distinct()
 
     context = {
         'calendar': cal,
-        'workouts_by_day': workouts_by_day,
-        'color_map': color_map,
+        'workout_days': workout_days,
         'sessions': sessions.order_by('-date'),
+        'current_month': current_month,
+        'prev_month': prev_month,
+        'next_month': next_month,
     }
 
     return render(request, 'dashboard.html', context)
@@ -150,3 +136,32 @@ def add_custom_exercise(request):
     else:
         form = ExerciseForm()
     return render(request, 'add_custom_exercise.html', {'form': form})
+
+@login_required
+def daily_workout_detail(request, year, month, day):
+    workout_date = date(year, month, day)
+    sessions = WorkoutSession.objects.filter(
+        user=request.user,
+        date=workout_date
+    ).prefetch_related('sets__exercise')
+
+    context = {
+        'date': workout_date,
+        'sessions': sessions,
+    }
+    return render(request, 'daily_workout_detail.html', context)
+
+@login_required
+def log_or_edit_today_workout(request):
+    today = date.today()
+    session = WorkoutSession.objects.filter(user=request.user, date=today).first()
+
+    if session:
+        return redirect('workout_session_detail', session_id=session.id)
+    else:
+        return redirect('add_workout_session')
+
+def get_exercises_by_category(request):
+    category = request.GET.get('category')
+    exercises = Exercise.objects.filter(category=category).order_by('name')
+    return JsonResponse(list(exercises.values('id', 'name')), safe=False)

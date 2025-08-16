@@ -4,7 +4,7 @@
         <h2>Workout on {{ session.date }}</h2>
         <hr>
         <h3>Add a Set</h3>
-        <form method="POST">
+        <form method="POST" id="add-set-form">
             {% csrf_token %}
             {{ form.as_p }}
             <button type="submit" class="btn btn-primary">Add Set</button>
@@ -19,4 +19,22 @@
             {% endfor %}
         </ul>
     </div>
+
+    <script>
+        document.getElementById('id_category').addEventListener('change', function() {
+            const category = this.value;
+            const url = `/ajax/get_exercises_by_category/?category=${category}`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    const exerciseSelect = document.getElementById('id_exercise');
+                    exerciseSelect.innerHTML = '<option value="">---------</option>';
+                    data.forEach(exercise => {
+                        const option = new Option(exercise.name, exercise.id);
+                        exerciseSelect.add(option);
+                    });
+                });
+        });
+    </script>
 {% endblock content %}

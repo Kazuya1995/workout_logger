@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+    <h3>Workout Details for {{ date|date:"F d, Y" }}</h3>
+
+    {% if sessions %}
+        <a href="{% url 'workout_session_detail' sessions.first.id %}" class="btn btn-secondary mb-3">Edit Workout</a>
+        {% for session in sessions %}
+            <h4 class="mt-4">Session {{ forloop.counter }}</h4>
+            <ul class="list-group">
+                {% for set in session.sets.all %}
+                    <li class="list-group-item">{{ set }}</li>
+                {% empty %}
+                    <li class="list-group-item">No sets in this session.</li>
+                {% endfor %}
+            </ul>
+        {% endfor %}
+    {% else %}
+        <p>No workouts recorded for this day.</p>
+    {% endif %}
+
+    <a href="{% url 'dashboard' %}" class="btn btn-primary mt-3">Back to Calendar</a>
+{% endblock content %}

@@ -10,9 +10,24 @@ class WorkoutSessionForm(forms.ModelForm):
         }
 
 class WorkoutSetForm(forms.ModelForm):
+    category = forms.ChoiceField(choices=Exercise.MUSCLE_GROUPS)
+
     class Meta:
         model = WorkoutSet
-        fields = ['exercise', 'reps', 'weight']
+        fields = ['category', 'exercise', 'reps', 'weight']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['exercise'].queryset = Exercise.objects.none()
+
+        if 'category' in self.data:
+            try:
+                category = self.data.get('category')
+                self.fields['exercise'].queryset = Exercise.objects.filter(category=category).order_by('name')
+            except (ValueError, TypeError):
+                pass  # invalid input from the client; ignore and fallback to an empty queryset
+        elif self.instance.pk:
+            self.fields['exercise'].queryset = self.instance.exercise.category.exercise_set.order_by('name')
 
 class ExerciseSelectionForm(forms.Form):
     exercise = forms.ModelChoiceField(queryset=Exercise.objects.all())
