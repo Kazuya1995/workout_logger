@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+    <h2>Progress Chart</h2>
+    <form method="GET" action="{% url 'progress_chart' %}">
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-primary">Generate Chart</button>
+    </form>
+
+    {% if data %}
+    <div>
+        <canvas id="progressChart"></canvas>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const ctx = document.getElementById('progressChart');
+        new Chart(ctx, {
+            type: 'line',
+            data: {{ data|safe }},
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    </script>
+    {% endif %}
+{% endblock content %}
